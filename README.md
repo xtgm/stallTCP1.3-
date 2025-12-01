@@ -44,15 +44,44 @@
 
 ## 🛠️ 部署指南
 
-### 方法一：直接在 Cloudflare 后台部署（最简单）
+------------------------------------------------------------------------
 
-1. 登录 [Cloudflare Dashboard](https://dash.cloudflare.com/)。
-2. 进入 **Workers & Pages** -> **Create Application** -> **Create Worker**。
-3. 命名你的 Worker（例如 `vless-worker`），点击 **Deploy**。
-4. 点击 **Edit code**，清空原有代码。
-5. 将本项目中的 `worker.js` 内容完整复制粘贴进去。
-6. **⚠️ 重要配置**：修改代码顶部的 **用户配置区域**（详见下文）。
-7. 点击 **Save and Deploy**。
+
+
+
+
+
+
+## 🚀 快速开始
+
+--- **worker部署**（小白最优选择）
+部署 CF Worker：
+
+登录你的cloudflare
+找到计算和AI里的Workers 和 Pages：
+选择从 Hello World! 开始：
+
+<img width="1264" height="602" alt="image" src="https://github.com/user-attachments/assets/2b80a97b-ee57-42a8-be1a-8180254f54dc" />
+
+
+输入任意的work名称之后点击部署即可
+
+<img width="1645" height="806" alt="image" src="https://github.com/user-attachments/assets/b26217ed-d17c-465d-bcbd-b232ab5a4fd0" />
+
+
+然后在cloudflare的Workers 和 Pages里面 找到你部署好的work项目 以我的项目为例： 点击编辑代码
+
+<img width="1646" height="128" alt="image" src="https://github.com/user-attachments/assets/a7f0c75a-56c3-467b-a07f-d37cafb8dd6c" />
+
+
+将 worker.js 的内容粘贴到 Worker 编辑器中并完成部署
+
+
+
+**到这里worker部署就结束了**
+
+
+------------------------------------------------------------------------
 
 ### 方法二：通过 GitHub Actions 部署（进阶）
 
