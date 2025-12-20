@@ -3,5 +3,6 @@ main = "_worker.js"
 compatibility_date = "2025-12-17"
 # D1 数据库绑定
 d1_databases = [
-  { binding = "DB", database_name = "liehuo-db", database_id = "7d12d4f7-8e6e-45c7-affd-7c2db14c160a" }
+  { binding = "DB", database_name = "huo-db", database_id = "d4f7-8e-45c7-afd-7c60a" }
 ]
+
