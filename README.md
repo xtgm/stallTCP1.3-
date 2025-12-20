@@ -81,35 +81,13 @@
 2.  **初始化表结构 (必做)**：
     *   进入刚才创建的数据库，点击 **控制台 (Console)** 标签。
     *   复制以下 SQL 代码粘贴到控制台并点击 **Execute (执行)**：
-  ```sql
- 1. 配置表：存储后台保存的设置 (TG Token, CF Key, 优选IP等)
-CREATE TABLE IF NOT EXISTS config (
-    key TEXT PRIMARY KEY,
-    value TEXT
-);
-
--- 2. 白名单表：存储允许访问后台的 IP (当前代码核心功能)
-CREATE TABLE IF NOT EXISTS whitelist (
-    ip TEXT PRIMARY KEY,
-    created_at INTEGER
-);
-
--- 3. 日志表：存储访问日志
-CREATE TABLE IF NOT EXISTS logs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    time TEXT,
-    ip TEXT,
-    region TEXT,
-    action TEXT
-);
-
--- 4. 统计表：记录每日请求量
-CREATE TABLE IF NOT EXISTS stats (
-    date TEXT PRIMARY KEY,
-    count INTEGER DEFAULT 0
-);
+```      
+CREATE TABLE IF NOT EXISTS config (key TEXT PRIMARY KEY, value TEXT);
+CREATE TABLE IF NOT EXISTS whitelist (ip TEXT PRIMARY KEY, created_at INTEGER);
+CREATE TABLE IF NOT EXISTS logs (id INTEGER PRIMARY KEY AUTOINCREMENT, time TEXT, ip TEXT, region TEXT, action TEXT);
+CREATE TABLE IF NOT EXISTS stats (date TEXT PRIMARY KEY, count INTEGER DEFAULT 0);
+CREATE TABLE IF NOT EXISTS flood (ip TEXT PRIMARY KEY, count INTEGER DEFAULT 0, updated_at INTEGER);
 ```
-
 
 ## 📂 代码版本说明
 
