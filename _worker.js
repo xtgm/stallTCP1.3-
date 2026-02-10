@@ -500,7 +500,7 @@ export default {
                   // 策略：我们生成第一个可用的 subUrl (非当前 host) 传给转换器，或者直接传 host (如果是worker自身)
                   // 简单起见，我们构造一个基于 _SUB_DOMAIN_LIST[0] 的 URL 传给转换器，因为转换器是服务器端抓取
                   let targetSubDomain = _SUB_DOMAIN_LIST[0] || host;
-                  const subUrl = `https://${targetSubDomain}/sub?uuid=${_UUID}&encryption=none&security=tls&sni=${host}&alpn=h3&fp=random&allowInsecure=1&type=ws&host=${host}&path=${encodeURIComponent(pathParam)}`;
+                  const subUrl = `https://${targetSubDomain}/sub?uuid=${_UUID}&encryption=none&security=tls&sni=${host}&alpn=h3&fp=random&allowInsecure=0&type=ws&host=${host}&path=${encodeURIComponent(pathParam)}`;
                   
                   const subApi = `${converterUrl}/sub?target=${type}&url=${encodeURIComponent(subUrl)}&config=${encodeURIComponent(config)}&emoji=true&list=false&sort=false&fdn=false&scv=false`;
                   try {
@@ -520,7 +520,7 @@ export default {
             // ⭐ 功能2: 多订阅源域名故障切换
             for (const subDomain of _SUB_DOMAIN_LIST) {
                 if (host.toLowerCase() === subDomain.toLowerCase()) continue; // 跳过自身，防止死循环 (如果是自请求)
-                const subUrl = `https://${subDomain}/sub?uuid=${_UUID}&encryption=none&security=tls&sni=${host}&alpn=h3&fp=random&allowInsecure=1&type=ws&host=${host}&path=${encodeURIComponent(pathParam)}`;
+                const subUrl = `https://${subDomain}/sub?uuid=${_UUID}&encryption=none&security=tls&sni=${host}&alpn=h3&fp=random&allowInsecure=0&type=ws&host=${host}&path=${encodeURIComponent(pathParam)}`;
                 try {
                     const res = await fetch(subUrl, { headers: { 'User-Agent': UA } });
                     if (res.ok) {
@@ -839,7 +839,7 @@ function loginPage(tgGroup, siteUrl, githubUrl, pageTitle) {
 function dashPage(host, uuid, proxyip, subpass, subdomain, converter, env, clientIP, hasAuth, tgState, cfState, add, addApi, addCsv, tgToken, tgId, cfId, cfToken, cfMail, cfKey, sysParams, dashTitle, proxyCheckUrl, dls) {
     const defaultSubLink = `https://${host}/${subpass}`;
     const pathParam = proxyip ? "/proxyip=" + proxyip : "/";
-    const longLink = `https://${subdomain}/sub?uuid=${uuid}&encryption=none&security=tls&sni=${host}&alpn=h3&fp=random&allowInsecure=1&type=ws&host=${host}&path=${encodeURIComponent(pathParam)}`;
+    const longLink = `https://${subdomain}/sub?uuid=${uuid}&encryption=none&security=tls&sni=${host}&alpn=h3&fp=random&allowInsecure=0&type=ws&host=${host}&path=${encodeURIComponent(pathParam)}`;
     const safeVal = (str) => (str || '').replace(/"/g, '&quot;');
     const getStatusLabel = (val, sysVal) => { if (!val) return ""; if (val === sysVal) return `<span class="source-tag sys">🔒 系统预设 (不可删除)</span>`; return `<span class="source-tag man">💾 后台配置 (可清除)</span>`; };
     return `<!DOCTYPE html>
@@ -3025,7 +3025,7 @@ function dashPage(host, uuid, proxyip, subpass, subdomain, converter, env, clien
             search.set('sni', host);
             search.set('alpn', 'h3');
             search.set('fp', 'random');
-            search.set('allowInsecure', '1');
+            search.set('allowInsecure', '0');
             search.set('type', 'ws');
             search.set('host', host);
             search.set('path', path);
