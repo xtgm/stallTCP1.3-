@@ -5,10 +5,10 @@ import/**/{/**/connect as $c/**/}/**/from/**/'cloudflare:sockets';const _=o=>$c(
 // =============================================================================
 
 // --- 基础账号与网络配置 ---
-let UUID = "06b65903-406d-4a41-8463-6fd5c0ee7798"; //修改可用的uuid
-const WEB_PASSWORD = "123456";  //修改你的登录密码
-const SUB_PASSWORD = "123456";  //修改你的订阅密码
-const DEFAULT_PROXY_IP = atob("UHJveHlJUC5VUy5DTUxpdXNzc3MubmV0"); // 支持多ProxyIP，使用逗号分隔
+let UUID = "06b65903-406d-4a41-8463-6fd5c0ee7798"; //a29c0d23-f7de-47df-853a-f957b731f510
+const WEB_PASSWORD = "123456";  //714522lz
+const SUB_PASSWORD = "123456";  //714522lz
+const DEFAULT_PROXY_IP = atob("UHJveHlJUC5VUy5DTUxpdXNzc3MubmV0"); // cf.090227.xyz,ip1.com,ip2.com,ip3.net
 const DEFAULT_SUB_DOMAIN = atob("c3ViLmNtbGl1c3Nzcy5uZXQ=");      // 支持多订阅域名，使用逗号分隔
 const DEFAULT_CONVERTER = atob("aHR0cHM6Ly9zdWJhcGkuY21saXVzc3NzLm5ldA=="); // 支持多转换器，使用逗号分隔
 
