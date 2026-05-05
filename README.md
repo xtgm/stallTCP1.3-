@@ -28,7 +28,7 @@
   - [界面链接配置](#-界面链接配置-可选)
   - [订阅转换配置](#-订阅转换配置-可选)
   - [绑定变量 (D1/KV)](#-绑定变量-d1kv)
-  - [多值配置详细使用说明](#-多值配置详细使用说明)
+  - [多值配置说明](#-多值配置说明)
   - [环境变量配置完整示例](#-环境变量配置完整示例)
 - [D1 数据库配置](#-d1-数据库配置-推荐---性能更强)
 - [KV 命名空间配置](#️-kv-命名空间配置-可选---兼容模式)
@@ -82,9 +82,9 @@
 
 **源代码来自于AK的strllTCP1.32**
 
-它集成了 **自适应订阅生成**、**优选IP自动负载均衡**、**智能白名单**、**Telegram 实时通知** 以及 **可视化的后台管理面板**。
+它集成了 **自适应订阅生成**、**优选IP支持**、**智能白名单**、**Telegram 实时通知**（Worker 版） 以及 **可视化的后台管理面板**。
 
-**新增全局http** 、**全局socks5** 、**替换1.32核心逻辑、传输流**
+**新增全局http** 、**全局socks5** 、**替换1.32核心逻辑、传输流** 、**ECH 自动注入** 、**Desire 裂变模式**
 
 ---
 
@@ -92,17 +92,19 @@
 
 > **🌟 核心特性：**
 > *   **无状态部署**：无需服务器，完全依托 Cloudflare 免费生态 (Workers + D1 + Pages)。
-> *   **极致安全**：采用 **会话级强制登录** 机制，杜绝后台"闪屏"泄露；新增 **HTTP 安全响应头** (X-Frame-Options 等)，防止点击劫持攻击。
+> *   **极致安全**：采用 **会话级强制登录** 机制，杜绝后台"闪屏"泄露；Worker 版新增 **HTTP 安全响应头** (X-Frame-Options 等)，防止点击劫持攻击。
 > *   **智能防死循环**：内置递归保护机制，防止因配置错误导致 Worker 自我请求炸库。
-> *   **可视化管理**：后台直接管理白名单 IP、TG 通知配置、Cloudflare 统计配置，无需反复修改代码。
-> *   **🆕 动态配置热更新**：支持在面板中直接修改并保存 TG Bot Token、Cloudflare API、优选 IP 库等关键配置（写入 D1/KV），无需重新部署代码。
-> *   **🆕 白名单可视化管理**：支持在后台添加/删除允许访问的 IP (IPv4/IPv6)，配置后即时生效，防止未授权访问。
-> *   **🆕 修改SUB跟远程在线编辑** ADD ADDAPI ADDCSV 跟上游SUB 两者只能二选一 使用上游SUB 远程编辑本地不生效，使用远程本地编辑 SUB禁止加任何数据【包括环境变量跟硬编码】目前 SUB我默认为空
-> *   **🆕 修改ADD ADDAPI ADDCSV三合一共存体** 前置条件 没有设置SUB订阅器情况下可用 设置了SUB之后不可用
+> *   **可视化管理**（Worker 版）：后台直接管理白名单 IP、TG 通知配置、Cloudflare 统计配置，无需反复修改代码。
+> *   **🆕 动态配置热更新**（Worker 版）：支持在面板中直接修改并保存 TG Bot Token、Cloudflare API、优选 IP 库等关键配置（写入 D1/KV），无需重新部署代码。
+> *   **🆕 白名单可视化管理**（Worker 版）：支持在后台添加/删除允许访问的 IP (IPv4/IPv6)，配置后即时生效，防止未授权访问。
+> *   **🆕 修改SUB跟远程在线编辑**（Worker 版）：ADD ADDAPI ADDCSV 跟上游SUB 两者只能二选一 使用上游SUB 远程编辑本地不生效，使用远程本地编辑 SUB禁止加任何数据【包括环境变量跟硬编码】目前 默认使用SUB优选订阅生成器
+> *   **🆕 修改ADD ADDAPI ADDCSV三合一共存体**（Worker 版）：前置条件 没有设置SUB订阅器情况下可用 设置了SUB之后不可用
 
 **配置优先级：环境变量 > D1数据库 > KV空间 > 本地硬编码**
 
 ### ⚙️ 配置加载优先级详解
+
+> **⚠️ 四级配置加载仅适用于 Worker 版。Snippets 版只有代码硬编码一种配置方式。**
 
 系统采用四级配置加载机制，确保灵活性和安全性：
 
@@ -123,35 +125,39 @@
 
 ## 🔑 snippets专用用户配置区域说明（重要 - 必读）
 
-> **⚠️ snippets代码采用「字符串拆分」防特征扫描技术！**
+> **⚠️ snippets代码采用「字符串拆分」写法！**
 >
-> 配置值通过 `"" + ""` 拼接方式书写，运行时 JavaScript 自动合并为完整字符串。
-> 这样做的目的是：**防止 GitHub 搜索引擎和爬虫通过关键词匹配到你的代码**。
+> 配置值通过 `'' + ''` 拼接方式书写，运行时 JavaScript 自动合并为完整字符串。
 > 你看到的每一段拼接，连起来读就是完整的明文内容。
+>
+> **重要：拆分必须用引号在外面断开，如 `'cl'+'ash'` 或 `"cl"+"ash"`，不能把 `+` 写在引号内部如 `"cl+ash"`！**
 
 ---
 
 ### 配置区域在哪里？
 
-打开代码文件（`snippets.js` 或 `snippets.txt`），**第 3 ~ 19 行**就是用户配置区域：
+打开代码文件（`snippets.js` 或 `参考.txt`），**第 2 ~ 21 行**就是用户配置区域：
 
 ```javascript
-// 用户配置区域（用 ""+""  拆分特征词，防止扫描匹配，运行时自动拼接）
+// 用户配置区域（用 ''+'' 拆分特征词，防止扫描匹配，运行时自动拼接）
 const UUID = "06b65903-406d-4a41-8463-6fd5c0ee7798"; // 可用的uuid
 const WP = "123456";  // 登录密码
 const SUB_PWD = "123456";  // 订阅密码
-let PIP = "Pr"+"oxy"+"IP.US."+"CML"+"iussss"+".net";  // 自定义的中转ip
-let SUB = "sub."+"cm"+"liussss"+".net";  // 自定义的订阅源
+let PIP = 'Pro'+'xyIP.US.'+'cm'+'liussss.net';  // 自定义的中转ip
+let SUB = 'sub.'+'cm'+'liussss.net';  // 自定义的订阅源
 const NU = "https://nva.saas.ae.kg/"; // 🧭 导航按钮链接
 const TG = "https://t.me/zyssadmin";   // 群组
 const PC = "https://kaic.hidns.co/";  // 中转检测站
-let SUBAPI = "https://"+"sub"+"api."+"cm"+"liussss"+".net";  // 自定义后端api
-let SUBINI = "https://"+"raw.github"+"usercontent.com/"+"cm"+"liu/"+"ACL4"+"SSR/main/"+"Cl"+"ash/config/"+"ACL4"+"SSR_Online_Full_MultiMode.ini"; // 自定义订阅配置转换ini
-const SBV12 = "https://"+"raw.github"+"usercontent.com/"+"sins"+"pired/"+"sub-st"+"ore-template/main/1.12.x/"+"sing-"+"box.json"; // 禁止修改
-const SBV11 = "https://"+"raw.github"+"usercontent.com/"+"sins"+"pired/"+"sub-st"+"ore-template/main/1.11.x/"+"sing-"+"box.json"; // 禁止修改
-const BT = "";  // TG Bot Token
-const CI = "";  // TG Chat ID
+let SUBAPI = 'https://su'+'bapi.'+'cm'+'liussss.net';  // 自定义后端api
+let SUBINI = 'https://raw.githubusercontent.com/'+'cm'+'liu/ACL4SSR/main/'+'Cl'+'ash/config/ACL4SSR_Online_Full_MultiMode.ini'; // 自定义订阅配置转换ini
+const SBV12 = 'https://raw.githubusercontent.com/sinspired/su'+'b-st'+'ore-template/main/1.12.x/si'+'ng-b'+'ox.json'; // 禁止修改
+const SBV11 = 'https://raw.githubusercontent.com/sinspired/su'+'b-st'+'ore-template/main/1.11.x/si'+'ng-b'+'ox.json'; // 禁止修改
 const AI = "";  // 管理员IP白名单
+const ST = "";  // Desire token（填入后SUB填Desire域名走裂变模式，留空走原有逻辑）
+const ECH = true;  // ECH 开关（true=开启，false=关闭）
+const ECH_DNS = 'https://do'+'h.'+'cm'+'liu'+'ssss'+'.net/'+'C'+'ML'+'iu'+'ssss';  // DoH 查询地址
+const ECH_SNI = 'cl'+'oudf'+'lare'+'-ech'+'.com';  // ECH 解析域名
+const FP = ECH ? 'chrome' : 'randomized';  // 指纹：ECH开→chrome，关→randomized
 //结束
 ```
 
@@ -159,16 +165,21 @@ const AI = "";  // 管理员IP白名单
 
 ### 什么是字符串拆分？为什么要这样写？
 
-**问题**：如果你在代码中直接写 `"ProxyIP.US.CMLiussss.net"`，GitHub 搜索引擎和爬虫可以通过搜索 `cmliussss` 直接找到你的代码。
+**问题**：如果你在代码中直接写完整的域名或关键词，可能会被搜索引擎匹配到你的代码。
 
-**解决方案**：把字符串用 `+` 号断开，比如写成 `"CML"+"iussss"`。
+**解决方案**：把字符串用 `+` 号断开，比如写成 `'cm'+'liussss'`。
 
 **原理**：
-- 源代码文件中，`"CML"` 和 `"iussss"` 是两个独立的字符串片段
-- 搜索 `cmliussss` 或 `CMLiussss` 都**搜不到**，因为文件中不存在这个完整词
-- 但 JavaScript 运行时会自动把 `"CML"+"iussss"` 拼接成 `"CMLiussss"`，功能完全正常
+- 源代码文件中，`'cm'` 和 `'liussss'` 是两个独立的字符串片段
+- 搜索完整关键词**搜不到**，因为文件中不存在这个完整词
+- 但 JavaScript 运行时会自动把 `'cm'+'liussss'` 拼接成 `'cmliussss'`，功能完全正常
 
 > **简单理解**：就像把一个词拆成两半写，机器搜不到，但人眼一看就懂。
+
+> **⚠️ 常见错误**：不要把 `+` 写在引号内部！
+> - ❌ 错误：`"cm+liussss"` — 这样 `+` 变成了字面文本，不会拼接
+> - ✅ 正确：`'cm'+'liussss'` — 引号在外面断开，JS 会正确拼接
+> - ✅ 也正确：`"cm"+"liussss"` — 双引号和单引号效果一样
 
 ---
 
@@ -188,11 +199,14 @@ const AI = "";  // 管理员IP白名单
 | `SUBINI` | Clash 配置模板 URL | ACL4SSR 配置链接 | ✅ 建议拆分 | ✅ 可改 |
 | `SBV12` | Sing-box v1.12 配置 | sinspired 模板链接 | ✅ 已拆分 | ❌ 禁止修改 |
 | `SBV11` | Sing-box v1.11 配置 | sinspired 模板链接 | ✅ 已拆分 | ❌ 禁止修改 |
-| `BT` | TG Bot Token | （空） | ❌ 不需要 | ✅ 可改 |
-| `CI` | TG Chat ID | （空） | ❌ 不需要 | ✅ 可改 |
 | `AI` | 管理员 IP 白名单 | （空） | ❌ 不需要 | ✅ 可改 |
+| `ST` | Desire 裂变 Token | （空） | ❌ 不需要 | ✅ 可改 |
+| `ECH` | ECH 开关 | `true` | ❌ 不需要 | ✅ 可改 |
+| `ECH_DNS` | DoH 查询地址 | `https://doh.cmliussss.net/CMLiussss` | ✅ 建议拆分 | ✅ 可改 |
+| `ECH_SNI` | ECH 解析域名 | `cloudflare-ech.com` | ✅ 建议拆分 | ✅ 可改 |
+| `FP` | TLS 指纹 | ECH开→`chrome`，关→`randomized` | ❌ 不需要 | ⚪ 自动联动 |
 
-> **什么时候需要拆分？** 当你的配置值中包含敏感关键词（如项目名、用户名、特定域名）时，建议拆分。普通的密码、UUID、自己的私有域名一般不需要拆分。
+> **什么时候需要拆分？** 当你的配置值中包含公共项目名、用户名、特定域名等关键词时，建议拆分。普通的密码、UUID、自己的私有域名一般不需要拆分。
 
 ---
 
@@ -200,7 +214,7 @@ const AI = "";  // 管理员IP白名单
 
 #### 第 1 步：找到要修改的变量
 
-打开代码文件，找到第 3 ~ 19 行的用户配置区域。每行都有注释说明用途。
+打开代码文件，找到第 2 ~ 21 行的用户配置区域。每行都有注释说明用途。
 
 #### 第 2 步：确定你的新值
 
@@ -219,7 +233,7 @@ const AI = "";  // 管理员IP白名单
 
 ```javascript
 // 改之前
-let PIP = "Pr"+"oxy"+"IP.US."+"CML"+"iussss"+".net";
+let PIP = 'Pro'+'xyIP.US.'+'cm'+'liussss.net';
 
 // 改之后（你自己的域名，没有敏感词，直接写）
 let PIP = "cdn.my-proxy.com";
@@ -229,13 +243,13 @@ let PIP = "cdn.my-proxy.com";
 
 ```javascript
 // 改之前
-let PIP = "Pr"+"oxy"+"IP.US."+"CML"+"iussss"+".net";
+let PIP = 'Pro'+'xyIP.US.'+'cm'+'liussss.net';
 
 // 改之后（新域名包含敏感词 example，你想拆开它）
-let PIP = "cdn."+"exa"+"mple"+".com";
+let PIP = 'cdn.'+'exa'+'mple.com';
 ```
 
-> **核心规则**：在你认为是特征的关键词中间，用 `""+""` 断开就行。
+> **核心规则**：在你认为是特征的关键词中间，用 `''+''` 断开就行。注意引号在外面！
 
 ---
 
@@ -245,33 +259,33 @@ let PIP = "cdn."+"exa"+"mple"+".com";
 
 ```javascript
 // ❌ 错误：没有断开关键词，搜索 "cmliussss" 仍然能匹配到
-let SUB = "sub.cmliussss.net";
+let SUB = 'sub.cmliussss.net';
 
 // ✅ 正确：关键词被断开，搜索 "cmliussss" 匹配不到
-let SUB = "sub."+"cm"+"liussss"+".net";
+let SUB = 'sub.'+'cm'+'liussss.net';
 
 // ✅ 也正确：拆得更细
-let SUB = "sub."+"c"+"m"+"liu"+"ssss"+".net";
+let SUB = 'sub.'+'c'+'m'+'liu'+'ssss.net';
 ```
 
 #### 规则 2：拆分点要让两边都不构成完整特征
 
 ```javascript
 // ⚠️ 一般：拆成 "cmlius" + "sss"，"cmlius" 仍有一定辨识度
-let SUB = "sub."+"cmlius"+"sss"+".net";
+let SUB = 'sub.'+'cmlius'+'sss.net';
 
 // ✅ 更好：拆成 "cm" + "liussss"，两边都没有辨识度
-let SUB = "sub."+"cm"+"liussss"+".net";
+let SUB = 'sub.'+'cm'+'liussss.net';
 ```
 
 #### 规则 3：非敏感部分不需要拆
 
 ```javascript
 // ❌ 过度拆分：".net" 不是敏感词，没必要拆
-let SUB = "s"+"u"+"b"+"."+"c"+"m"+"l"+"i"+"u"+"s"+"s"+"s"+"s"+"."+"n"+"e"+"t";
+let SUB = 's'+'u'+'b'+'.'+'c'+'m'+'l'+'i'+'u'+'s'+'s'+'s'+'s'+'.'+'n'+'e'+'t';
 
 // ✅ 合理拆分：只拆敏感词 "cmliussss"
-let SUB = "sub."+"cm"+"liussss"+".net";
+let SUB = 'sub.'+'cm'+'liussss.net';
 ```
 
 #### 规则 4：多个敏感词分别拆
@@ -280,15 +294,25 @@ let SUB = "sub."+"cm"+"liussss"+".net";
 // SUBINI 中有多个敏感词：cmliu、ACL4SSR、Clash
 // 每个都要断开
 
-let SUBINI = "https://"
-  +"raw.github"+"usercontent.com/"  // github 拆开
-  +"cm"+"liu/"                       // cmliu 拆开
-  +"ACL4"+"SSR/main/"               // ACL4SSR 拆开
-  +"Cl"+"ash/config/"               // Clash 拆开
-  +"ACL4"+"SSR_Online_Full_MultiMode.ini";  // ACL4SSR 再次拆开
+let SUBINI = 'https://raw.githubusercontent.com/'
+  +'cm'+'liu/ACL4SSR/main/'    // cmliu 拆开
+  +'Cl'+'ash/config/'           // Clash 拆开
+  +'ACL4SSR_Online_Full_MultiMode.ini';
 ```
 
 > **提示**：上面的换行写法只是为了方便阅读。实际代码中写成一行也完全可以。
+
+#### 规则 5：引号必须在外面断开（重要！）
+
+```javascript
+// ❌ 错误写法：+ 号在引号内部，变成了字面文本
+let PIP = "Pro+xyIP.US.+cm+liussss.net";
+// 运行结果是：Pro+xyIP.US.+cm+liussss.net  ← + 号没有拼接，功能异常！
+
+// ✅ 正确写法：每段都是独立的字符串，用 + 连接
+let PIP = 'Pro'+'xyIP.US.'+'cm'+'liussss.net';
+// 运行结果是：ProxyIP.US.cmliussss.net  ← 功能正常！
+```
 
 ---
 
@@ -299,7 +323,7 @@ let SUBINI = "https://"
 **示例 1：所有值都是自己的私有域名，不需要拆分**
 
 ```javascript
-// 用户配置区域（用 ""+""  拆分特征词，防止扫描匹配，运行时自动拼接）
+// 用户配置区域
 const UUID = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"; // 改成你自己的 UUID
 const WP = "MyPassword888";   // 改成你的登录密码
 const SUB_PWD = "mysub";      // 改成你的订阅密码
@@ -310,32 +334,32 @@ const TG = "https://t.me/mygroup";                    // 直接写
 const PC = "https://check.mydomain.com/";             // 直接写
 let SUBAPI = "https://api.v1.mk";                     // 直接写
 let SUBINI = "https://example.com/my-config.ini";     // 直接写
-const SBV12 = "https://"+"raw.github"+"usercontent.com/"+"sins"+"pired/"+"sub-st"+"ore-template/main/1.12.x/"+"sing-"+"box.json"; // 禁止修改
-const SBV11 = "https://"+"raw.github"+"usercontent.com/"+"sins"+"pired/"+"sub-st"+"ore-template/main/1.11.x/"+"sing-"+"box.json"; // 禁止修改
-const BT = "123456789:ABCdefGHIjklMNOpqrsTUVwxyz";   // TG Bot Token
-const CI = "987654321";                                // TG Chat ID
+const SBV12 = 'https://raw.githubusercontent.com/sinspired/su'+'b-st'+'ore-template/main/1.12.x/si'+'ng-b'+'ox.json'; // 禁止修改
+const SBV11 = 'https://raw.githubusercontent.com/sinspired/su'+'b-st'+'ore-template/main/1.11.x/si'+'ng-b'+'ox.json'; // 禁止修改
 const AI = "1.2.3.4";                                  // 管理员IP白名单
+const ST = "";                                          // Desire Token（留空不启用）
+const ECH = true;                                       // ECH 开关
 //结束
 ```
 
 **示例 2：使用了别人的公共服务域名，需要拆分**
 
 ```javascript
-let PIP = "Pr"+"oxy"+"IP.US."+"CML"+"iussss"+".net";       // ProxyIP.US.CMLiussss.net
-let SUB = "sub."+"cm"+"liussss"+".net";                      // sub.cmliussss.net
-let SUBAPI = "https://"+"sub"+"api."+"cm"+"liussss"+".net";  // https://subapi.cmliussss.net
+let PIP = 'Pro'+'xyIP.US.'+'cm'+'liussss.net';       // ProxyIP.US.cmliussss.net
+let SUB = 'sub.'+'cm'+'liussss.net';                   // sub.cmliussss.net
+let SUBAPI = 'https://su'+'bapi.'+'cm'+'liussss.net';  // https://subapi.cmliussss.net
 ```
 
 **示例 3：混合使用（部分拆分，部分明文）**
 
 ```javascript
-let PIP = "cdn.my-proxy.com";                                // 自己的域名，不拆
-let SUB = "sub."+"cm"+"liussss"+".net";                      // 公共域名，拆分
-let SUBAPI = "https://api.v1.mk";                            // 自己的API，不拆
-let SUBINI = "https://"+"raw.github"+"usercontent.com/"+"cm"+"liu/"+"ACL4"+"SSR/main/"+"Cl"+"ash/config/"+"ACL4"+"SSR_Online_Full_MultiMode.ini";  // 公共链接，拆分
+let PIP = "cdn.my-proxy.com";                          // 自己的域名，不拆
+let SUB = 'sub.'+'cm'+'liussss.net';                   // 公共域名，拆分
+let SUBAPI = "https://api.v1.mk";                      // 自己的API，不拆
+let SUBINI = 'https://raw.githubusercontent.com/'+'cm'+'liu/ACL4SSR/main/'+'Cl'+'ash/config/ACL4SSR_Online_Full_MultiMode.ini';  // 公共链接，拆分
 ```
 
-> **总结**：自己的私有域名直接写明文，别人的公共域名/项目名用 `+` 拆开。
+> **总结**：自己的私有域名直接写明文，公共域名/项目名用 `+` 拆开。拆分时引号必须在外面断开！
 
 ---
 
@@ -345,30 +369,28 @@ let SUBINI = "https://"+"raw.github"+"usercontent.com/"+"cm"+"liu/"+"ACL4"+"SSR/
 
 | 完整关键词 | 推荐拆分写法 | 说明 |
 |-----------|-------------|------|
-| `cmliussss` | `"cm"+"liussss"` | 用户名 |
-| `CMLiussss` | `"CML"+"iussss"` | 用户名（大写） |
-| `cmliu` | `"cm"+"liu"` | GitHub 用户名 |
-| `ProxyIP` | `"Pr"+"oxy"+"IP"` | 中转IP关键词 |
-| `ACL4SSR` | `"ACL4"+"SSR"` | 配置项目名 |
-| `Clash` | `"Cl"+"ash"` | 客户端名称 |
-| `sinspired` | `"sins"+"pired"` | 模板作者名 |
-| `sing-box` | `"sing-"+"box"` | 客户端名称 |
-| `sub-store` | `"sub-st"+"ore"` | 项目名 |
-| `githubusercontent` | `"github"+"usercontent"` | GitHub 域名 |
+| `cmliussss` | `'cm'+'liussss'` | 用户名 |
+| `cmliu` | `'cm'+'liu'` | GitHub 用户名 |
+| `Clash` | `'Cl'+'ash'` | 客户端名称 |
+| `sing-box` | `'si'+'ng-b'+'ox'` | 客户端名称 |
+| `mihomo` | `'mi'+'ho'+'mo'` | 客户端名称 |
+| `sub-store` | `'su'+'b-st'+'ore'` | 项目名 |
 
 ### 哪些变量可以留空？
 
 | 变量 | 留空效果 |
 |------|---------|
 | `PIP` | 不使用 ProxyIP，使用默认直连 |
-| `SUB` | 不使用上游订阅，降级使用本地 ADD 节点 |
+| `SUB` | 不使用上游订阅（Worker 版降级使用本地 ADD 节点，Snippets 版使用默认节点） |
 | `SUBAPI` | 不使用订阅转换（Clash/Sing-box 客户端可能无法使用） |
 | `SUBINI` | 使用代码内置的默认 Clash 配置模板 |
 | `NU` | 登录页不显示「导航」按钮 |
 | `TG` | 登录页不显示「交流群」链接 |
 | `PC` | 不使用 ProxyIP 检测功能 |
-| `BT` / `CI` | 不启用 Telegram 通知 |
 | `AI` | 不设置静态白名单 IP |
+| `ST` | 不启用 Desire 裂变模式，走原有订阅逻辑 |
+| `ECH_DNS` | 不使用 ECH（需同时将 `ECH` 设为 `false`） |
+| `ECH_SNI` | 不使用 ECH SNI |
 
 ### 变量名与环境变量对照表
 
@@ -386,13 +408,16 @@ let SUBINI = "https://"+"raw.github"+"usercontent.com/"+"cm"+"liu/"+"ACL4"+"SSR/
 | `PIP` | `PROXYIP` | ProxyIP 中转地址 | 直接改代码（支持拆分写法） |
 | `SUB` | `SUB_DOMAIN` | 上游订阅器域名 | 直接改代码（支持拆分写法） |
 | `SUBAPI` | `SUBAPI` | 订阅转换后端 API | 直接改代码（支持拆分写法） |
-| `SUBINI` | — | Clash 配置模板 | 直接改代码（支持拆分写法） |
+| `SUBINI` | `CLASH_CONFIG` | Clash 配置模板 | 直接改代码（支持拆分写法） |
 | `NU` | — | 导航链接 | 直接改代码 |
 | `TG` | `TG_GROUP_URL` | 群组链接 | 直接改代码 |
 | `PC` | `PROXY_CHECK_URL` | 检测站链接 | 直接改代码 |
-| `BT` | `TG_BOT_TOKEN` | TG Bot Token | 直接改代码 |
-| `CI` | `TG_CHAT_ID` | TG Chat ID | 直接改代码 |
 | `AI` | `WL_IP` | 管理员 IP 白名单 | 直接改代码 |
+| `ST` | `SUB_TOKEN` | Desire 裂变 Token | 直接改代码 |
+| `ECH` | `ECH_ENABLED` | ECH 开关 | 直接改代码（`true`/`false`） |
+| `ECH_DNS` | `ECH_DNS` | DoH 查询地址 | 直接改代码（支持拆分写法） |
+| `ECH_SNI` | `ECH_SNI` | ECH 解析域名 | 直接改代码（支持拆分写法） |
+| `FP` | — | TLS 指纹 | 自动联动 ECH 开关 |
 
 **Worker 版配置优先级**：环境变量 > D1 数据库 > KV 存储 > 代码硬编码
 
@@ -405,12 +430,13 @@ let SUBINI = "https://"+"raw.github"+"usercontent.com/"+"cm"+"liu/"+"ACL4"+"SSR/
 本项目包含两套代码，请根据您的部署方式选择：
 
 *   **Worker / Pages 部署 (推荐)**：请使用 **`_worker.js`** 代码。
-    *   *UI 特效：高级毛玻璃风格*
-    *   *新增特性：支持 D1 数据库高速读写、后台动态配置、强制安全登录*
+    *   *UI 特效：高级毛玻璃风格（星空+流星+玻璃碎片+3D球体+双主题+侧边栏）*
+    *   *新增特性：支持 D1 数据库高速读写、后台动态配置、强制安全登录、ECH 注入、Desire 裂变*
     *   *配置方式：**支持环境变量**，环境变量 > D1 > KV > 代码硬编码*
 *   **Snippets 部署**：请使用 **`snippets.js`** 代码。 【也支持worker部署】
     *   *UI 特效：紫色渐变风格*
-    *   *配置方式：**纯硬编码**，不支持环境变量，直接修改代码顶部用户配置区域*
+    *   *新增特性：ECH 注入（DoH 查询 + Sing-box/Clash 自动注入）、Desire 裂变*
+    *   *配置方式：**纯硬编码**，不支持环境变量/D1/KV，直接修改代码顶部用户配置区域*
 
 ---
 
@@ -431,7 +457,7 @@ let SUBINI = "https://"+"raw.github"+"usercontent.com/"+"cm"+"liu/"+"ACL4"+"SSR/
 ## 🚀 懒人使用指南
 
 > * **Snippets代码（硬编码）**：不支持环境变量，所有数据都需要在代码顶部【用户配置区域】直接修改
-> * **Worker代码（环境变量）**：支持环境变量，环境变量第一优先级，第二优先级为代码硬编码【在用户配置区域进行修改】
+> * **Worker代码（环境变量）**：支持环境变量，优先级：环境变量 > D1 数据库 > KV 存储 > 代码硬编码【在用户配置区域进行修改】
 > * **默认使用SUB订阅器为优先**：有的人喜欢本地ADD那些花里花俏，有的人喜欢SUB，自己改
 > * **默认什么都不改就是默认的**：我写入了支持proxyip作为节点，所以即便是默认值也依旧有一个节点使用
 > * **所有教程都在github写了说明**：我希望你认真查看每一处
@@ -467,13 +493,17 @@ let SUBINI = "https://"+"raw.github"+"usercontent.com/"+"cm"+"liu/"+"ACL4"+"SSR/
 | **`UUID_REFRESH`** | 可选 | **UUID 刷新周期** (秒)，默认 86400 (24小时)<br>*需配合 `KEY` 使用，定期自动更换 UUID* | `86400` | ❌ |
 | **`WEB_PASSWORD`** | ✅ | **后台登录密码** (务必设置复杂密码) | `admin888` | ❌ |
 | **`SUB_PASSWORD`** | ✅ | **订阅路径密码** (访问 `https://域名/密码`) | `my-secret-sub` | ❌ |
-| **`PROXYIP`** | ✅ | **默认优选域名/IP** (节点连接地址)<br>**✅ 支持多个，使用英文逗号分隔，系统自动轮询** | `cf.090227.xyz` 或<br>`ip1.com,ip2.com,ip3.net` | ✅ |
-| **`SUB_DOMAIN`** | ✅ | **真实订阅源** (上游优选订阅生成器地址)<br>*自动清洗 `https://` 和尾部 `/`*<br>**✅ 支持多个，使用英文逗号分隔，自动故障切换** | `sub.cmliussss.net` 或<br>`sub1.com,sub2.com` | ✅ |
-| **`SUBAPI`** | 可选 | **订阅转换后端** (用于 Sing-box/Clash 转换)<br>*自动补全 `https://`*<br>**✅ 支持多个，使用英文逗号分隔，自动故障切换** | `https://subapi.cmliussss.net` 或<br>`api1.com,api2.com` | ✅ |
+| **`PROXYIP`** | ✅ | **默认优选域名/IP** (节点连接地址) | `cf.090227.xyz` | ❌ |
+| **`SUB_DOMAIN`** | ✅ | **真实订阅源** (上游优选订阅生成器地址)<br>*自动清洗 `https://` 和尾部 `/`* | `sub.cmliussss.net` | ❌ |
+| **`SUBAPI`** | 可选 | **订阅转换后端** (用于 Sing-box/Clash 转换)<br>*自动补全 `https://`* | `https://subapi.cmliussss.net` | ❌ |
 | **`PS`** | 可选 | **节点备注** (自动追加到节点名称后)<br>*支持本地节点与上游订阅双重生效* | `【专线】` | ❌ |
 | **`LOGIN_PAGE_TITLE`** | 可选 | **登录页面标题** (浏览器标签页显示的标题) | `Worker Login` | ❌ |
 | **`DASHBOARD_TITLE`** | 可选 | **后台管理页面标题** (浏览器标签页显示的标题) | `烈火控制台 · Glass LH` | ❌ |
 | **`DLS`** | 可选 | **ADDCSV 速度下限筛选阈值** (单位 KB/s)<br>*低于此速度的节点会被过滤，默认 5000* | `5000` | ❌ |
+| **`SUB_TOKEN`** | 可选 | **Desire 裂变 Token** (留空不启用)<br>*启用后 SUB_DOMAIN 填 Desire 域名走裂变模式* | `my-secret-token` | ❌ |
+| **`ECH_ENABLED`** | 可选 | **ECH 开关** (`true`/`false`，默认 `true`)<br>*开启后自动注入 ECH Config 到 Sing-box/Clash 订阅* | `true` | ❌ |
+| **`ECH_SNI`** | 可选 | **ECH 解析域名** (用于 DoH 查询 ECH Config) | `cloudflare-ech.com` | ❌ |
+| **`ECH_DNS`** | 可选 | **DoH 查询地址** (用于获取 ECH Config PEM) | `https://doh.example.com/dns-query` | ❌ |
 
 ### 🛡️ 安全与通知配置
 
@@ -500,8 +530,8 @@ let SUBINI = "https://"+"raw.github"+"usercontent.com/"+"cm"+"liu/"+"ACL4"+"SSR/
 | 变量名 | 说明 | 默认值 | 支持多值 |
 | :--- | :--- | :--- | :---: |
 | `TG_GROUP_URL` | **登录页交流群链接** | `https://t.me/zyssadmin` | ❌ |
-| `SITE_URL` | **登录页网站链接** | `https://123.com/` | ❌ |
-| `GITHUB_URL` | **登录页项目链接** | `https://github.com/xtgm/stallTCP1.3V1` | ❌ |
+| `SITE_URL` | **登录页网站链接** | `https://blog.2026565.xyz/` | ❌ |
+| `GITHUB_URL` | **登录页项目链接** | `https://github.com/xtgm/stallTCP1.32V2` | ❌ |
 | `PROXY_CHECK_URL` | **后台 ProxyIP 检测跳转地址** | `https://kaic.hidns.co/` | ❌ |
 
 ### 📋 订阅转换配置 (可选)
@@ -510,6 +540,7 @@ let SUBINI = "https://"+"raw.github"+"usercontent.com/"+"cm"+"liu/"+"ACL4"+"SSR/
 | :--- | :--- | :--- | :---: |
 | `CLASH_CONFIG` | **Clash 配置模板 URL** | ACL4SSR_Online_Full_MultiMode.ini | ❌ |
 | `SINGBOX_CONFIG_V12` | **Sing-box v1.12.x 配置模板 URL** | sinspired/sub-store-template/1.12.x | ❌ |
+| `SINGBOX_CONFIG_V11` | **Sing-box v1.11.x 配置模板 URL**（兼容） | sinspired/sub-store-template/1.11.x | ❌ |
 
 ### 🔗 绑定变量 (D1/KV)
 
@@ -518,67 +549,11 @@ let SUBINI = "https://"+"raw.github"+"usercontent.com/"+"cm"+"liu/"+"ACL4"+"SSR/
 | `DB` | D1 数据库 | **D1 数据库绑定** (变量名必须为 `DB`，不可更改) |
 | `LH` | KV 命名空间 | **KV 存储绑定** (变量名必须为 `LH`，不可更改) |
 
-### 📝 多值配置详细使用说明
+### 📝 多值配置说明
 
-**以下变量支持配置多个值，实现负载均衡或故障切换功能：**
+**以下变量支持配置多个值：**
 
-#### 1. `PROXYIP` - 多 ProxyIP 轮询负载均衡
-
-**功能：** 系统会基于时间戳自动在多个 ProxyIP 之间轮询切换，实现负载均衡。
-
-**格式：** 多个地址使用**英文逗号 `,`** 分隔
-
-**示例：**
-```
-ProxyIP.US.CMLiussss.net,cf.090227.xyz,proxyip.example.com
-```
-
-**工作原理：**
-- 系统使用 `Math.floor(Date.now() / 1000) % proxyIPs.length` 计算当前使用哪个 IP
-- 每秒自动切换到下一个 IP（取模轮询）
-- 所有 ProxyIP 地址会被自动 trim 去除空格
-
----
-
-#### 2. `SUB_DOMAIN` - 多订阅源故障切换
-
-**功能：** 当第一个订阅源不可用时，自动尝试下一个，实现高可用性。
-
-**格式：** 多个域名使用**英文逗号 `,`** 分隔
-
-**示例：**
-```
-sub.cmliussss.net,backup.example.com,sub3.proxy.net
-```
-
-**工作原理：**
-- 系统按顺序尝试每个订阅源
-- 自动清洗 `https://` 前缀和尾部 `/`
-- 跳过与当前 Worker 域名相同的地址（防止死循环）
-- 第一个成功响应的订阅源将被使用
-
----
-
-#### 3. `SUBAPI` - 多订阅转换器故障切换
-
-**功能：** 当第一个转换器不可用时，自动尝试下一个。
-
-**格式：** 多个 URL 使用**英文逗号 `,`** 分隔
-
-**示例：**
-```
-https://subapi.cmliussss.net,https://api.v1.mk,https://sub.xeton.dev
-```
-
-**工作原理：**
-- 系统按顺序尝试每个转换 API
-- 自动补全 `https://` 前缀
-- 自动去除尾部 `/`
-- 第一个成功响应的转换器将被使用
-
----
-
-#### 4. `WL_IP` - 多白名单 IP 支持ipv4跟ipv6
+#### 1. `WL_IP` - 多白名单 IP 支持ipv4跟ipv6
 
 **功能：** 设置多个管理员 IP，这些 IP 无需登录即可访问后台。
 
@@ -595,7 +570,9 @@ https://subapi.cmliussss.net,https://api.v1.mk,https://sub.xeton.dev
 - 手动添加的 IP 可以在后台删除
 
 ---
-#### 5. `ADD` / `ADDAPI` / `ADDCSV` - 多节点源
+#### 2. `ADD` / `ADDAPI` / `ADDCSV` - 多节点源（仅 Worker 版）
+
+> **⚠️ Snippets 版不支持 ADD/ADDAPI/ADDCSV 功能。**
 
 **功能：** 支持多行配置或多个远程 URL，所有节点会合并生成。
 
@@ -636,14 +613,14 @@ UUID = 06b65903-406d-4a41-8463-6fd5c0ee7798
 WEB_PASSWORD = MySecurePassword123
 SUB_PASSWORD = my-sub-path
 
-# 多 ProxyIP 轮询（逗号分隔）
-PROXYIP = ProxyIP.US.CMLiussss.net,cf.090227.xyz,cdn.example.com
+# ProxyIP
+PROXYIP = ProxyIP.US.CMLiussss.net
 
-# 多订阅源故障切换（逗号分隔）
-SUB_DOMAIN = sub.cmliussss.net,backup.sub.com
+# 订阅源
+SUB_DOMAIN = sub.cmliussss.net
 
-# 多转换器故障切换（逗号分隔）
-SUBAPI = https://subapi.cmliussss.net,https://api.v1.mk
+# 转换器
+SUBAPI = https://subapi.cmliussss.net
 
 # 多白名单 IP（逗号分隔）
 WL_IP = 192.168.1.1,10.0.0.1
@@ -659,6 +636,13 @@ CF_TOKEN = your-api-token
 # 节点备注
 PS = 【专线】
 
+# ECH 配置
+ECH_ENABLED = true
+ECH_SNI = cloudflare-ech.com
+
+# Desire 裂变（留空不启用）
+# SUB_TOKEN = your-secret-token
+
 # ADDCSV 速度筛选阈值
 DLS = 3000
 ```
@@ -667,6 +651,8 @@ DLS = 3000
 ---
 
 ## 💾 D1 数据库配置 (推荐 - 性能更强)
+
+> **⚠️ 本章节仅适用于 Worker / Pages 部署。Snippets 版不支持 D1 数据库。**
 
 **本版本支持 Cloudflare D1 (SQLite) 数据库，推荐使用以获得最佳体验。**
 
@@ -694,6 +680,8 @@ CREATE TABLE IF NOT EXISTS stats (date TEXT PRIMARY KEY, count INTEGER DEFAULT 0
 ---
 
 ## 🗄️ KV 命名空间配置 (可选 - 兼容模式)
+
+> **⚠️ 本章节仅适用于 Worker / Pages 部署。Snippets 版不支持 KV 存储。**
 
 **如果您不想配置 D1，系统支持自动降级使用 KV 存储配置和白名单。**
 
@@ -803,14 +791,14 @@ CREATE TABLE IF NOT EXISTS stats (date TEXT PRIMARY KEY, count INTEGER DEFAULT 0
 - `spider` - 搜索引擎爬虫
 - `bot` - 机器人
 - `python` - Python 脚本
-- `scrapy` - Scrapy 爬虫框架
+- `scrapy` - Scrapy 爬虫框架（仅 Worker 版）
 - `curl` - 命令行工具
 - `wget` - 下载工具
+- `crawler` - 通用爬虫（仅 Snippets 版）
 
 **拦截行为：**
-- 返回 `404 Not Found`，不记录日志
-- 不发送 TG 通知，避免刷屏
-- 节省 Worker 请求配额
+- Worker 版：返回 `404 Not Found`，不记录日志，不发送 TG 通知
+- Snippets 版：返回 `403 Forbidden`
 
 **注意事项：**
 - 如果您使用 `curl` 或 Python 脚本测试订阅链接，可能会被拦截
@@ -839,14 +827,21 @@ CREATE TABLE IF NOT EXISTS stats (date TEXT PRIMARY KEY, count INTEGER DEFAULT 0
     *   采用 **会话级** 验证机制。
     *   **防闪屏修复**：后台页面默认隐藏，只有鉴权通过后才显示，杜绝加载瞬间的数据泄露。
     *   **自动退出**：关闭浏览器或标签页即自动退出登录，每次进入后台均需重新验证。
-    *   **XSS 防御**：新增 HTTP 响应头 (X-Frame-Options, X-Content-Type-Options) 策略，防止管理面板被恶意嵌入。
+    *   **XSS 防御**（仅 Worker 版）：新增 HTTP 响应头 (X-Frame-Options, X-Content-Type-Options) 策略，防止管理面板被恶意嵌入。
 *   **🛡️ 白名单机制**：
-    *   **自动记录**：登录成功的管理员 IP 会自动加入临时白名单。
-    *   **可视化管理**：后台可手动添加/删除白名单 IP，支持 IPv4/IPv6，确保只有授权设备能访问后台接口。
+    *   **手动管理**：后台可手动添加/删除白名单 IP，支持 IPv4/IPv6，确保只有授权设备能访问后台接口。
 *   **🤖 智能通知系统**：
     *   **静默模式**：自动过滤爬虫扫描，只有管理员登录或操作时才发送通知，告别刷屏。
     *   **UA 拦截**：自动拦截 `bot`, `spider`, `python`, `curl` 等常见爬虫 User-Agent。
 *   **💡 状态指示灯**：后台直观显示 TG 推送和 CF 统计的配置状态（绿灯/红灯）。
+*   **🔒 ECH 自动注入**（Worker + Snippets 双版本支持）：
+    *   通过 DoH 二进制查询自动获取 ECH Config PEM。
+    *   自动注入到 Sing-box 订阅（匹配 UUID 的节点）和 Clash 订阅（双格式 Flow + Block）。
+    *   支持环境变量 `ECH_ENABLED`/`ECH_SNI`/`ECH_DNS` 覆盖（Worker 版）。
+    *   指纹自动联动：ECH 开启→`chrome`，关闭→`randomized`。
+*   **🔗 Desire 裂变模式**（Worker + Snippets 双版本支持）：
+    *   通过 `SUB_TOKEN` 启用，支持 `/sub?base=节点&token=密钥` 格式。
+    *   Worker 版支持环境变量 `SUB_TOKEN` 覆盖，不在后台 UI 暴露（保护 Token 隐私）。
 
 ### 🔄 核心逻辑更新
 
@@ -861,7 +856,7 @@ CREATE TABLE IF NOT EXISTS stats (date TEXT PRIMARY KEY, count INTEGER DEFAULT 0
 > * **🆕 自适应传输模式**
 > * **🆕 代理认证支持**
 
-**核心逻辑调整：实现了 "二选一互斥" 逻辑。**
+**核心逻辑调整（仅 Worker 版）：实现了 "二选一互斥" 逻辑。**
 > * 优先级判定：代码会先检查 SUB_DOMAIN（无论是环境变量还是硬编码）。
 > * 情况A（有上游）：如果 SUB_DOMAIN 存在且不为空，只执行上游订阅逻辑。完全忽略本地的 ADD/ADDAPI/ADDCSV。
 > * 情况B（无上游）：只有当 SUB_DOMAIN 被清空（删除环境变量 + 代码留空）时，才会降级去执行本地 ADD 节点的生成逻辑。
@@ -871,8 +866,8 @@ CREATE TABLE IF NOT EXISTS stats (date TEXT PRIMARY KEY, count INTEGER DEFAULT 0
 
 *   **🚀 自适应订阅**：自动识别以下客户端并返回对应格式：
     *   **支持列表**：Clash, Sing-box, Mihomo, Flclash, V2rayNG, Surge, Quantumult X, Shadowrocket, Loon, Hiddify 全平台主流客户端等。
-*   **🌍 优选 IP 支持**：支持环境变量。支持在线编辑
-*   **📊 可视化后台**：
+*   **🌍 优选 IP 支持**：支持环境变量（Worker 版）或硬编码（Snippets 版）
+*   **📊 可视化后台**（Worker 版）：
     *   直接在后台修改和保存 TG/CF/优选IP 配置（优先于硬编码，无需重新部署）。
     *   查看 Cloudflare 今日 API 请求量。
     *   查看最近 50 条访问日志（从 D1/KV 读取）。
@@ -884,13 +879,13 @@ CREATE TABLE IF NOT EXISTS stats (date TEXT PRIMARY KEY, count INTEGER DEFAULT 0
 
 **自动转换规则：**
 - **Clash/Meta 客户端**：自动调用订阅转换 API，返回 Clash 配置
-- **Sing-box 客户端**：自动调用订阅转换 API，返回 Sing-box 配置（v1.12.x）
+- **Sing-box 客户端**：自动调用订阅转换 API，返回 Sing-box 配置（优先 v1.11.x，失败自动切换 v1.12.x）
 - **其他客户端**（V2rayNG、Shadowrocket 等）：返回标准 Base64 编码的节点列表
 
 **支持的配置模板：**
 - **Clash 配置**：`ACL4SSR_Online_Full_MultiMode.ini`
-- **Sing-box v1.12.x**：最新模板（默认使用）
-- **Sing-box v1.11.x**：兼容模板（代码中已定义）
+- **Sing-box v1.11.x**：优先使用的模板（默认）
+- **Sing-box v1.12.x**：备用模板（v1.11.x 失败时自动切换）
 
 **识别的客户端列表：**
 - Mihomo, Flclash, Clash, Meta, Stash
@@ -911,6 +906,8 @@ CREATE TABLE IF NOT EXISTS stats (date TEXT PRIMARY KEY, count INTEGER DEFAULT 0
 
 ### 📡 节点生成规则详解
 
+> **⚠️ ADD/ADDAPI/ADDCSV/PS/DLS 功能仅适用于 Worker 版。Snippets 版不支持自定义节点源和节点备注。**
+
 **默认节点生成：**
 - 如果未配置 `ADD`/`ADDAPI`/`ADDCSV`，系统会生成一个默认节点
 - 默认节点使用 `PROXYIP` 作为连接地址
@@ -926,10 +923,12 @@ CREATE TABLE IF NOT EXISTS stats (date TEXT PRIMARY KEY, count INTEGER DEFAULT 0
   ```
   https://example.com/ips.txt
   ```
-- **ADDCSV 格式**：远程 CSV 文件 URL，只读取第一列（IP:端口）
+- **ADDCSV 格式**：远程 CSV 文件 URL，读取 IP（第1列）、端口（第2列）和下载速度（第8列）
   ```
   https://example.com/优选IP.csv
   ```
+  CSV 列格式：`IP, 端口, TLS, 数据中心, 地区, 城市, 网络延迟, 下载速度`（共 8 列）
+  系统只使用第 1、2、8 列，其余列忽略。配合 `DLS` 可过滤低速节点。
 
 **节点备注（PS）功能：**
 - 如果设置了 `PS` 环境变量，会自动追加到所有节点名称后面
@@ -1022,6 +1021,8 @@ http://user:pass@proxy.example.com:8080
 
 ### 🎨 UI 特性说明
 
+> **以下 UI 描述主要针对 Worker 版后台。Snippets 版后台功能较精简，不包含 TG 通知配置、CF 统计配置、白名单管理、自定义节点、日志等面板。**
+
 **登录页面：**
 *   **星空背景**：200 颗动态闪烁星星，营造沉浸式夜空效果。
 *   **流星雨特效**：8 颗流星以真实轨迹划过屏幕，循环播放。
@@ -1050,20 +1051,21 @@ http://user:pass@proxy.example.com:8080
 **登录流程：**
 1. 用户在登录页输入密码
 2. 系统设置 Cookie：`auth=密码`（路径：`/`，SameSite=Lax）
-3. 同时在 `sessionStorage` 中设置 `is_active=1` 标记
-4. 页面加载时检查 `sessionStorage`，如果不存在则清除 Cookie
+3. 同时在浏览器中设置活跃标记：Worker 版使用 `sessionStorage`（关闭标签页即失效），Snippets 版使用 `localStorage`（关闭浏览器后仍保留）
+4. 页面加载时检查活跃标记，如果不存在则清除 Cookie
 
 **自动退出触发条件：**
-- 关闭浏览器标签页（sessionStorage 被清除）
-- 刷新页面时 sessionStorage 不存在
+- 关闭浏览器标签页（Worker 版：sessionStorage 被清除；Snippets 版：Cookie 仍保留，但 localStorage 标记仍在）
+- Worker 版刷新页面时 sessionStorage 不存在会触发退出
 - 手动点击右上角退出按钮
 - Cookie 过期或被清除
+
+> **注意**：Snippets 版使用 `localStorage` 存储活跃标记，关闭标签页后标记不会自动清除，重新打开可能仍保持登录状态。Worker 版使用 `sessionStorage`，关闭标签页即自动退出。
 
 **安全特性：**
 - Cookie 使用 `SameSite=Lax` 防止 CSRF 攻击
 - 页面默认隐藏（`display:none; opacity:0`），验证通过后才显示
 - 所有敏感操作（白名单管理、配置保存）需要验证 Cookie 或白名单 IP
-- 登录成功的 IP 自动加入临时白名单，下次访问无需重复登录
 
 **防闪屏实现：**
 ```javascript
@@ -1075,13 +1077,15 @@ body.loaded { display: block; opacity: 1; }
 ```
 
 **会话保持机制：**
-- 只要不关闭标签页，sessionStorage 会一直保持
-- 刷新页面时会检查 sessionStorage，存在则保持登录状态
-- 关闭标签页后重新打开，需要重新登录
+- Worker 版：只要不关闭标签页，sessionStorage 会一直保持；关闭标签页后重新打开需要重新登录
+- Snippets 版：使用 localStorage，关闭标签页后标记仍在，可能保持登录状态
+- 刷新页面时会检查活跃标记，存在则保持登录状态
 
 ---
 
 ### 🛡️ 白名单管理
+
+> **⚠️ 后台可视化白名单管理仅适用于 Worker 版。Snippets 版只支持通过代码硬编码 `AI` 变量设置固定白名单 IP。**
 
 *   **查看**: 点击 "刷新" 按钮查看当前数据库中的白名单 IP。
 *   **添加**: 输入 IP 地址点击 "添加白名单" 即可，无需重启。
@@ -1090,11 +1094,15 @@ body.loaded { display: block; opacity: 1; }
 
 ### ⚙️ 动态配置
 
+> **⚠️ 本功能仅适用于 Worker 版。Snippets 版所有配置只能通过修改代码硬编码实现，不支持在线保存。**
+
 *   **保存配置**: 在 "🛠️ 优选 IP 与 远程配置" 或 Telegram/CF 弹窗中修改内容后，点击保存。
 *   数据将写入 D1/KV，优先级高于代码中的默认值。
 *   **检测**: 支持检测 ProxyIP 可用性，支持测试订阅链接连通性。
 
 ### 🎯 自定义页面标题使用方法
+
+> **⚠️ 本功能仅适用于 Worker 版。Snippets 版登录页标题固定为"管理员登陆"，面板标题固定为"Worker 订阅管理"，不可自定义。**
 
 **方法 1：通过环境变量设置（推荐）**
 
@@ -1136,11 +1144,13 @@ const DASHBOARD_TITLE = "我的管理控制台";
 *   点击右上角 **🌗** 按钮即可在深色/浅色主题间切换。
 *   **深色主题**：适合夜间使用，星空背景 + 幻彩文字。
 *   **浅色主题**：适合白天使用，天空蓝背景 + 深色文字，护眼不刺眼。
-*   主题设置保存在浏览器本地，下次访问自动应用。
+*   主题设置**不会**持久化保存，刷新页面或关闭标签页后恢复为默认深色主题。
 
 ---
 
 ## 🔐 动态 UUID 功能说明
+
+> **⚠️ 本功能仅适用于 Worker 版。Snippets 版使用固定 UUID，不支持动态 UUID。**
 
 **动态 UUID 是一项高级安全特性，可定期自动更换客户端连接凭证，防止 UUID 泄露后长期被滥用。**
 
@@ -1179,6 +1189,8 @@ UUID_REFRESH = 86400
 ---
 
 ## 📊 Cloudflare 统计功能说明
+
+> **⚠️ 本章节仅适用于 Worker 版。Snippets 版不支持 Cloudflare 统计功能。**
 
 **系统支持两种统计方式查询今日请求数：**
 
@@ -1308,6 +1320,8 @@ CF_KEY = 你的Global API Key
 
 ## 📝 访问日志与统计详解
 
+> **⚠️ 本章节仅适用于 Worker 版。Snippets 版不支持访问日志和统计功能。**
+
 ### 访问日志功能
 
 **系统自动记录所有关键操作，帮助管理员监控访问情况。**
@@ -1326,7 +1340,7 @@ CF_KEY = 你的Global API Key
 
 *   **优先级 1**：D1 数据库 `logs` 表（推荐）
     *   表结构：`id, time, ip, region, action`
-    *   自动清理：保留最新 1000 条记录
+    *   自动清理：保留最新 2000 条记录
 *   **优先级 2**：KV 存储 `ACCESS_LOGS` 键（降级方案）
     *   格式：纯文本，每行一条记录，用 `|` 分隔字段
 
@@ -1362,6 +1376,8 @@ CREATE TABLE stats (
 *   **Cloudflare API**：如果配置了 CF 凭证，优先显示 API 统计（更准确）
 
 ### 🔗 系统内部 API 接口（Flag 参数）
+
+> **⚠️ 以下 API 接口仅适用于 Worker 版。Snippets 版不支持 flag 参数接口。**
 
 系统提供了一系列内部 API 接口，通过 `?flag=xxx` 参数调用：
 
@@ -1441,13 +1457,13 @@ fetch('https://your-worker.com?flag=add_whitelist', {
   ```
   https://raw.githubusercontent.com/cmliu/ACL4SSR/main/Clash/config/ACL4SSR_Online_Full_MultiMode.ini
   ```
-- **Sing-box v1.12.x 模板**：
-  ```
-  https://raw.githubusercontent.com/sinspired/sub-store-template/main/1.12.x/sing-box.json
-  ```
-- **Sing-box v1.11.x 模板**（兼容）：
+- **Sing-box v1.11.x 模板**（默认优先）：
   ```
   https://raw.githubusercontent.com/sinspired/sub-store-template/main/1.11.x/sing-box.json
+  ```
+- **Sing-box v1.12.x 模板**（备用）：
+  ```
+  https://raw.githubusercontent.com/sinspired/sub-store-template/main/1.12.x/sing-box.json
   ```
 
 **外部服务链接：**
@@ -1458,7 +1474,7 @@ fetch('https://your-worker.com?flag=add_whitelist', {
 **修改方法：**
 在代码顶部用户配置区域找到以下变量并修改：
 ```javascript
-let SUBINI = "你的Clash配置URL";       // 或用 ""+""  拆分写法
+let SUBINI = '你的Clash配置URL';       // 或用 ''+'' 拆分写法
 const PC = "你的检测网站URL";
 ```
 
@@ -1539,10 +1555,10 @@ const PC = "你的检测网站URL";
 **特别感谢天诚修复的所有 Bug 与新增功能：**
 *   ❇️ 修复了 Cloudflare 网站不能访问的问题。
 *   ❇️ 新增加了机场三字码的适配。
-*   ❇️ 新增负载均衡轮询。
+*   ❇️ 新增优选IP支持。
 *   ❇️ 新增解锁 Emby 播放器。
 *   ❇️ 新增了韩国节点适配。
-*   ❇️ Trojan/Vless 订阅器内置 CSV 文件优化识别功能。
+*   ❇️ Vless 订阅器内置 CSV 文件优化识别功能。
 
 **相关支持与链接：**
 *   **源代码作者**：[Alexandre_Kojeve](https://t.me/Alexandre_Kojeve) (致敬原版 stallTCP1.32)
